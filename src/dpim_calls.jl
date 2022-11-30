@@ -26,7 +26,7 @@ Parametrisation of the autonomous system:
 function MORFE_mech_autonomous(mesh_file,domains_list,materials,
                                boundaries_list,constrained_dof,bc_vals,
                                α,β,
-                               Φₗᵢₛₜ,style,max_order,neig=0,nls=0)
+                               Φₗᵢₛₜ,style,max_order,neig=0,nls=0,vector_rotation=[0.0,0.0,0.0])
   # initialize output folder
   println("Initializing directories")
   odir = make_output_dir("tmp")
@@ -52,6 +52,9 @@ function MORFE_mech_autonomous(mesh_file,domains_list,materials,
   assembly_MCK!(mesh,U,M,C,K,α,β)
   K = Symmetric(K,:L)
   M = Symmetric(M,:L)
+  # add AM
+  compute_static_equilibrium!(K, M, C, U, mesh, nls, vector_rotation, odir)
+  # end AM
   C = Symmetric(C,:L)
   # check maximum number of computer eigenvalues
   if (neig==0)
@@ -89,6 +92,10 @@ function MORFE_mech_autonomous(mesh_file,domains_list,materials,
   # initialise also a zero order parametrisation
   if (nls>0)
     initialize_parametrisation!(Cp[1],0,ndofs,U.neq)
+
+    # add AM
+    add_stat_2_param(Cp[1], U)
+    # end AM
   end
   # impose identity tangency with linear eigenvalues
   initialize_parametrisation!(Cp[2],1,ndofs,U.neq)
@@ -164,7 +171,7 @@ function MORFE_mech_nonautonomous(mesh_file,domains_list,materials,
                                   Ω_list,κ_modes,κ_list,κ_phase,
                                   α,β,
                                   Φₗᵢₛₜ,style,max_order_a,max_order_na,
-                                  neig=0,nls=0)
+                                  neig=0,nls=0,vector_rotation=[0.0,0.0,0.0])
   # First we perform a parametrisation of the autonomous system
   #
   # initialize output folder
@@ -191,6 +198,9 @@ function MORFE_mech_nonautonomous(mesh_file,domains_list,materials,
   assembly_MCK!(mesh,U,M,C,K,α,β)
   K = Symmetric(K,:L)
   M = Symmetric(M,:L)
+  # add AM
+  compute_static_equilibrium!(K, M, C, U, mesh, nls, vector_rotation, odir)
+  # end AM
   C = Symmetric(C,:L)
   # check maximum number of computer eigenvalues
   if (neig==0)
@@ -233,6 +243,9 @@ function MORFE_mech_nonautonomous(mesh_file,domains_list,materials,
   # initialise also a zero order parametrisation
   if (nls>0)
     initialize_parametrisation!(Cp[1],0,ndofs,U.neq)
+    # add AM
+    add_stat_2_param(Cp[1], U)
+    # end AM
   end
   # impose identity tangency with linear eigenvalues
   initialize_parametrisation!(Cp[2],1,ndofs,U.neq)
